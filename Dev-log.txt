@@ -1,0 +1,12 @@
+RASPBERRY PI:
+    hostname - potwatcherpi //name of the device
+
+credentials:
+    username - potpi
+    password - potpi1337
+
+MQTT Broker Mosquitto
+
+installed (on pi) but not configured yet.
+
+follow this guide - https://randomnerdtutorials.com/how-to-install-mosquitto-broker-on-raspberry-pi/
