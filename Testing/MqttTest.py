@@ -2,14 +2,14 @@ import paho.mqtt.client as mqtt
 import argparse
 import sys
 
-
+subscribe = "eps/test/out"
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, reason_code, properties):
     print(f"Connected with result code {reason_code}")
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
-    client.subscribe("pot_watch/#")
+    client.subscribe(subscribe)
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
@@ -31,7 +31,7 @@ if __name__ == "__main__":
             val = input("Send: ")
             if val == "q":
                 break
-            mqttc.publish("pot_watch/text", val)
+            mqttc.publish("eps/test/in", val)
         mqttc.loop_stop()
 
 
