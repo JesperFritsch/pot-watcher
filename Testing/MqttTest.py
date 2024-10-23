@@ -31,7 +31,13 @@ if __name__ == "__main__":
             val = input("Send: ")
             if val == "q":
                 break
-            mqttc.publish("eps/test/in", val)
+            try:
+                int_val = int(val)
+                val_bytes = bytes([int_val])
+                mqttc.publish("config", val_bytes)
+            except Exception as e:
+                mqttc.publish("eps/test/in", val)
+            
         mqttc.loop_stop()
 
 

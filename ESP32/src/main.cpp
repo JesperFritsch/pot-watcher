@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <vector>
 
 // put function declarations here:
 // int myFunction(int, int);
@@ -13,72 +14,31 @@ const char *topic_out = "eps/test/out";
 const char *topic_in = "eps/test/in";
 const int mqtt_port = 1883;
 
-// // Define client instance
-// PubSubClient client;
-
-// void setup() {
-//   // put your setup code here, to run once:
-//   int result = myFunction(2, 3);
-//   pinMode (valueRead, INPUT);
-//   Serial.begin(115200);
-
-//   // Connecting to a Wi-Fi network
-//   WiFi.begin(ssid, password);
-//   while (WiFi.status() != WL_CONNECTED) {
-//     delay(500);
-//     Serial.println("Connecting to WiFi..");
-//   }
-//   Serial.println("Connected to WiFi");
-//   // client.setServer(mqtt_broker, mqtt_port);
-//   // client.setCallback(callback);
-//   // while (!client.connected()) {
-//   //   String client_id = "esp32-client-";
-//   //   client_id += String(WiFi.macAddress());
-//   //   Serial.printf("The client %s connects to the public MQTT broker\n", client_id.c_str());
-//   //   if (client.connect(client_id.c_str(), mqtt_username, mqtt_password)) {
-//   //     Serial.println("Public EMQX MQTT broker connected");
-//   //   } else {
-//   //     Serial.print("failed with state ");
-//   //     Serial.print(client.state());
-//   //     delay(2000);
-//   //   }
-//   // }
-
-// }
-
-// void callback(char *topic, byte *payload, unsigned int length) {
-//     Serial.print("Message arrived in topic: ");
-//     Serial.println(topic);
-//     Serial.print("Message:");
-//     for (int i = 0; i < length; i++) {
-//         Serial.print((char) payload[i]);
-//     }
-//     Serial.println();
-//     Serial.println("-----------------------");
-// }
-
-// void loop() {
-//   int mois = analogRead(valueRead);
-//   Serial.println(mois);
-//   delay(200);
-//     // put your main code here, to run repeatedly:
-//   // digitalWrite(valueRead, HIGH);  // turn the LED on (HIGH is the voltage level)
-//   // delay(1000);                      // wait for a second
-//   // digitalWrite(valueRead, LOW);   // turn the LED off by making the voltage LOW
-//   // delay(1000); 
-// }
-
-// // put function definitions here:
-// int myFunction(int x, int y) {
-//   return x + y;
-// }
 
 
+class MoistureSensor{
+  public:
+  
+    MoistureSensor(unsigned int read_pin_in, unsigned int scaling) : 
+      scaling(scaling),
+      read_pin(read_pin_in){
+        pinMode(this->read_pin, INPUT);
+      }
+      
+    float read(){
+      return 1-((float)(analogRead(this->read_pin)) / this->scaling);
+    }
+      
+    unsigned int get_pin(){
+      // if we need to know what pin this instance is using 
+      return this->read_pin;
+    }
+    
+  private:
+    unsigned int read_pin;
+    unsigned int scaling;
+};
 
-
-// const char* ssid = "........";
-// const char* password = "........";
-// const char* mqtt_server = "broker.mqtt-dashboard.com";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -87,6 +47,11 @@ unsigned long lastMsgTime = 0;
 char msg[MSG_BUFFER_SIZE];
 int value = 0;
 char *message_in = "no message";
+
+
+// MoistureSensor moist = MoistureSensor(4, 0xFFF);
+
+std::vector<MoistureSensor> sensors;
 
 void setup_wifi() {
 
@@ -120,6 +85,17 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
+  
+  
+  if(strcmp("config", topic) == 0){
+    sensors.clear();
+    sensors.push_back(MoistureSensor(payload[0], 0xFFF));
+    Serial.println(payload[0]);
+  }
+  else{
+    Serial.println("no config");
+  }
+  
   value = 0;
   char message_in[length + 1];
   memcpy(message_in, payload, length);
@@ -149,6 +125,7 @@ void reconnect() {
       client.publish(topic_out, "hello world");
       // ... and resubscribe
       client.subscribe(topic_in);
+      client.subscribe("config");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -178,10 +155,21 @@ void loop() {
   if (now - lastMsgTime > 1000) {
     lastMsgTime = now;
     ++value;
-    snprintf (msg, MSG_BUFFER_SIZE, "%s #%ld", message_in, value);
-    Serial.print("Publish message: ");
-    Serial.println(msg);
-    Serial.println(message_in);
-    client.publish(topic_out, msg);
+    
+    for(unsigned int i=0;i<sensors.size();i++){
+      MoistureSensor moist = sensors[i];
+      float moist_val = moist.read();
+      char txt_buffer[60];
+      snprintf(txt_buffer, 60, "moist_value [%d]: %.2f", i + 1, moist_val);
+      Serial.println(txt_buffer);
+    }
+    
+    
+    // snprintf (msg, MSG_BUFFER_SIZE, "%s #%ld", message_in, value);
+    // Serial.print("Publish message: ");
+    // Serial.println(msg);
+    // Serial.println(message_in);
+    // client.publish(topic_out, msg);
   }
 }
+
