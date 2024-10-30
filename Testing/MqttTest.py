@@ -1,6 +1,8 @@
 import paho.mqtt.client as mqtt
 import argparse
 import sys
+import json
+
 
 subscribe = "eps/test/out"
 
@@ -31,12 +33,10 @@ if __name__ == "__main__":
             val = input("Send: ")
             if val == "q":
                 break
-            try:
-                int_val = int(val)
-                val_bytes = bytes([int_val])
-                mqttc.publish("config", val_bytes)
-            except Exception as e:
-                mqttc.publish("eps/test/in", val)
+            id, pin = map(int, val.split(','))
+            val_dict = {"id": id, "pin": pin}
+            json_string = json.dumps(val_dict)
+            mqttc.publish("config", json_string)
             
         mqttc.loop_stop()
 

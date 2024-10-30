@@ -2,6 +2,8 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <vector>
+#include <ArduinoJson.h>
+
 
 // put function declarations here:
 // int myFunction(int, int);
@@ -13,7 +15,6 @@ const char *mqtt_broker = "192.168.0.39";
 const char *topic_out = "eps/test/out";
 const char *topic_in = "eps/test/in";
 const int mqtt_port = 1883;
-
 
 
 class MoistureSensor{
@@ -46,7 +47,7 @@ unsigned long lastMsgTime = 0;
 #define MSG_BUFFER_SIZE	(50)
 char msg[MSG_BUFFER_SIZE];
 int value = 0;
-char *message_in = "no message";
+const char *message_in = "no message";
 
 
 // MoistureSensor moist = MoistureSensor(4, 0xFFF);
@@ -81,33 +82,38 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
+  JsonDocument doc;
+  
+  const char* json_string = (const char*)payload;
+  deserializeJson(doc, json_string, (size_t)length); 
+  Serial.print("ID: ");
+  Serial.println(doc["id"].as<int>());
+  Serial.print("Pin: ");
+  Serial.println(doc["pin"].as<int>());
+
+  
+  // if(strcmp("config", topic) == 0){
+  //   sensors.clear();
+  //   sensors.push_back(MoistureSensor(payload[0], 0xFFF));
+  //   Serial.println(payload[0]);
+  // }
+  // else{
+  //   Serial.println("no config");
+  // }
   
   
-  if(strcmp("config", topic) == 0){
-    sensors.clear();
-    sensors.push_back(MoistureSensor(payload[0], 0xFFF));
-    Serial.println(payload[0]);
-  }
-  else{
-    Serial.println("no config");
-  }
-  
-  value = 0;
-  char message_in[length + 1];
-  memcpy(message_in, payload, length);
-  message_in[length] = '\0';
-  // Switch on the LED if an 1 was received as first character
-  if ((char)payload[0] == '1') {
-    digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
-    // but actually the LED is on; this is because
-    // it is active low on the ESP-01)
-  } else {
-    digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
-  }
+  // value = 0;
+  // char message_in[length + 1];
+  // memcpy(message_in, payload, length);
+  // message_in[length] = '\0';
+  // // Switch on the LED if an 1 was received as first character
+  // if ((char)payload[0] == '1') {
+  //   digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
+  //   // but actually the LED is on; this is because
+  //   // it is active low on the ESP-01)
+  // } else {
+  //   digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
+  // }
 
 }
 
@@ -156,7 +162,7 @@ void loop() {
     lastMsgTime = now;
     ++value;
     
-    for(unsigned int i=0;i<sensors.size();i++){
+    for(unsigned int i=0; i<sensors.size(); i++){
       MoistureSensor moist = sensors[i];
       float moist_val = moist.read();
       char txt_buffer[60];
