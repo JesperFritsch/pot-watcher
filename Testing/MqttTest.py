@@ -1,3 +1,5 @@
+#This is just a test to simulate that we are a ESP on the wifi 
+#start this through the Git bash client
 import paho.mqtt.client as mqtt
 import argparse
 import sys

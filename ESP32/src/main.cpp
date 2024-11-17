@@ -5,6 +5,7 @@
 #include <ArduinoJson.h>
 
 
+
 // put function declarations here:
 // int myFunction(int, int);
 // int valueRead = 4;
@@ -83,7 +84,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print(topic);
   Serial.print("] ");
   JsonDocument doc;
-  
+
   const char* json_string = (const char*)payload;
   deserializeJson(doc, json_string, (size_t)length); 
   Serial.print("ID: ");
@@ -91,16 +92,18 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Pin: ");
   Serial.println(doc["pin"].as<int>());
 
+
   
-  // if(strcmp("config", topic) == 0){
-  //   sensors.clear();
-  //   sensors.push_back(MoistureSensor(payload[0], 0xFFF));
-  //   Serial.println(payload[0]);
-  // }
-  // else{
-  //   Serial.println("no config");
-  // }
   
+  if(strcmp("config", topic) == 0){
+    sensors.clear();
+    sensors.push_back(MoistureSensor(doc["pin"].as<int>(), 0xFFF));
+    // Serial.println(payload[0]);
+  }
+  else{
+    Serial.println("no config");
+  }
+
   
   // value = 0;
   // char message_in[length + 1];
@@ -168,8 +171,8 @@ void loop() {
       char txt_buffer[60];
       snprintf(txt_buffer, 60, "moist_value [%d]: %.2f", i + 1, moist_val);
       Serial.println(txt_buffer);
+      client.publish("eps/test/out", txt_buffer);
     }
-    
     
     // snprintf (msg, MSG_BUFFER_SIZE, "%s #%ld", message_in, value);
     // Serial.print("Publish message: ");
